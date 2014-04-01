@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+require "#{File.dirname(File.dirname($0))}/lib/common.rb"
+require 'optparse'
+
+if system('git status >/dev/null 2>&1')
+  puts 'fatal: Initialized git'
+  exit -1
+end
+
+if parents_file_path(DWCOUNT_PATH) || parents_file_path(DWFORMAT_PATH)
+  puts 'fatal: Initialized daily-writing'
+  exit -1
+end
+
+opt = OptionParser.new
+opt.on('-p', '--page=PAGE', String) { |v| DWCOUNT_OPTS[:page] = v }
+opt.on('-r', '--rows=ROWS', Integer) { |v| DWCOUNT_OPTS[:rows] = v }
+opt.on('-c', '--cols=COLS', Integer) { |v| DWCOUNT_OPTS[:cols] = v }
+opt.on('--history=FILE', String) { |v| DWCOUNT_OPTS[:history_path] = v }
+opt.parse!(ARGV)
+
+dwcount_default(DWCOUNT_OPTS)
+
+save_yaml(DWCOUNT_PATH, DWCOUNT_OPTS)
+save_yaml(DWFORMAT_PATH, DWFORMAT_OPTS)
+`git init`

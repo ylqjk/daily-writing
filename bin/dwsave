@@ -1,0 +1,24 @@
+#!/bin/sh
+
+main() {
+    if [ $# -lt 1 ]; then
+        if [ -f ".dwcountrc" ]; then
+            find . -type d -maxdepth 1 | grep -v '\/\.' | while read dirpath
+            do
+                if [ -n "$(daily-writing-concat $dirpath)" ]; then
+                    echo "${dirpath}:"
+                    dwsave $dirpath
+                fi
+            done
+            return
+        fi
+
+        dirpath=$(pwd)
+    elif [ -d "$1" ]; then
+        dirpath=$1
+    fi
+
+    daily-writing-commit $@
+}
+
+main "$@"

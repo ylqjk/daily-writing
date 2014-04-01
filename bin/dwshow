@@ -1,0 +1,3 @@
+#!/bin/sh
+
+daily-writing-concat $@ | daily-writing-format

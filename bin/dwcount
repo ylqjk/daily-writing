@@ -1,0 +1,28 @@
+#!/bin/sh
+
+main() {
+    if [ $# -lt 1 ]; then
+        if [ -f ".dwcountrc" ]; then
+            find . -type d -maxdepth 1 | grep -v '\/\.' | while read dirpath
+            do
+                if [ -n "$(daily-writing-concat $dirpath)" ]; then
+                    echo "${dirpath}:"
+                    dwcount $dirpath
+                fi
+            done
+            return
+        fi
+
+        label=$(basename $(pwd))
+    elif [ -d "$1" ]; then
+        label=$(basename "$1")
+    fi
+
+    if [ -z "$label" ]; then
+        dwshow $@ | daily-writing-count --mode=total
+    else
+        dwshow $@ | daily-writing-count --label="$label"
+    fi
+}
+
+main "$@"

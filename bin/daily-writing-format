@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+require "#{File.dirname(File.dirname($0))}/lib/common.rb"
+
+rcpath = parents_file_path(DWFORMAT_PATH)
+CONFIG = rcpath ? YAML.load_file(rcpath) : {}
+
+REPLACE = CONFIG[:replace] && CONFIG[:replace].any? && CONFIG[:replace]
+REPLACE_REG = REPLACE && Regexp.new(REPLACE.keys.map{ |k| Regexp.quote(k) }.join('|'))
+
+ARGF.to_io.each_line do |line|
+  cache = []
+  line.gsub!(/`((?:[^\\`]|\\.)*)`/) { |m| cache << m[1...-1].gsub(/\\(.)/, '\1'); "\x7f" }
+  line.gsub!(REPLACE_REG, REPLACE) if REPLACE_REG
+  line.tr!('0-9A-Za-z', '０-９Ａ-Ｚａ-ｚ')
+  line.tr!(' !"#$%&\'()*+,-./:;<=>?@[]^_`{|}~', '　！＂＃＄％＆＇（）＊＋，－．／：；＜＝＞？＠［］＾＿｀｛｜｝～')
+  line.gsub!(/\x7f/) { cache.shift }
+  puts line
+end

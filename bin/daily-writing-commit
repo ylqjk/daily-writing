@@ -1,0 +1,24 @@
+#!/bin/sh
+
+main() {
+    if [ $# -lt 1 ]; then
+        dirpath=$(pwd)
+    elif [ -d "$1" ]; then
+        dirpath=$1
+    fi
+
+    if [ -z "$dirpath" ]; then
+        msg_count=$(dwcount $@)
+        git add $@
+    else
+        label=$(basename $dirpath)
+        msg_count=$(dwshow $dirpath | daily-writing-count --label="$label" --mode=diff --save)
+        if [ -z "$msg_count" ]; then
+            msg_count=$(dwshow $dirpath | daily-writing-count --label="$label" --mode=total --save)
+        fi
+        git add $dirpath/*.txt
+    fi
+    git commit -m "wrote ${msg_count} on $(date +'%Y/%m/%d')"
+}
+
+main "$@"

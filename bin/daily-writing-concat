@@ -1,0 +1,13 @@
+#!/bin/sh
+
+main() {
+    if [ $# -lt 1 ]; then
+        cat *.txt 2> /dev/null
+    elif [ -d "$1" ]; then
+        cat $1/*.txt 2> /dev/null
+    else
+        cat $@ 2> /dev/null
+    fi
+}
+
+main "$@"

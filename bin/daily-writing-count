@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+require "#{File.dirname(File.dirname($0))}/lib/common.rb"
+require 'optparse'
+
+OPTS = {
+  mode: :msg,
+  page: nil,
+  rows: nil,
+  cols: nil,
+  history_path: nil,
+  history_label: nil,
+  save: nil,
+}
+
+rcpath = parents_file_path(DWCOUNT_PATH)
+OPTS.merge!(YAML.load_file(rcpath)) if rcpath
+
+opt = OptionParser.new
+opt.on('-m', '--mode=MODE', [:msg, :total, :diff]) { |v| OPTS[:mode] = v }
+opt.on('-p', '--page=PAGE', String) { |v| OPTS[:size] = v }
+opt.on('-r', '--rows=ROWS', Integer) { |v| OPTS[:rows] = v }
+opt.on('-c', '--cols=COLS', Integer) { |v| OPTS[:cols] = v }
+opt.on('--history=FILE', String) { |v| OPTS[:history_path] = v }
+opt.on('--label=LABEL', String) { |v| OPTS[:history_label] = v }
+opt.on('--[no-]save', TrueClass) { |v| OPTS[:save] = v }
+opt.parse!(ARGV)
+
+dwcount_default(OPTS)
+
+# calc size
+count = 0
+
+ARGF.to_io.each_line do |line|
+  line.rstrip!
+  count += (line.size / OPTS[:rows].to_f).ceil
+end
+
+# get history
+last_count = nil
+if rcpath && OPTS[:history_path] && OPTS[:history_label]
+  history_path = File.join(File.dirname(rcpath), OPTS[:history_path])
+  count_history = File.exist?(history_path) ? YAML.load_file(history_path) : {}
+  count_history[OPTS[:history_label]] ||= []
+  last_count = count_history[OPTS[:history_label]].last
+
+  if last_count == count
+    last_count = count_history[OPTS[:history_label]][-2]
+  else
+    count_history[OPTS[:history_label]] << count
+    save_yaml(history_path, count_history) if OPTS[:save]
+  end
+end
+
+# render result
+def sprint_page(fmt, cnt)
+  page = sprintf(fmt, cnt / OPTS[:cols].to_f).sub(/\.?0+$/, '')
+  "#{page} #{OPTS[:page]}"
+end
+
+case OPTS[:mode]
+when :total
+  puts sprint_page('%.2f', count)
+when :diff
+  puts sprint_page('%.2f', count - last_count) if last_count
+else
+  total = sprint_page('%.2f', count)
+  diff = last_count ? sprint_page('%+.2f', count - last_count) : 'New'
+  puts "#{total} (#{diff})"
+end
